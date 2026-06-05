@@ -1,0 +1,159 @@
+{% extends "base.html" %}
+{% block title %}Alerts{% endblock %}
+
+{% block content %}
+<div class="page-container">
+    <div class="page-header">
+        <div>
+            <h1 class="page-title"><i class="fas fa-triangle-exclamation me-2"></i>Alert Management</h1>
+            <div class="page-sub">Active threats and historical security events</div>
+        </div>
+        <div class="header-actions">
+            <button class="btn-action" onclick="acknowledgeAll()">
+                <i class="fas fa-check-double me-1"></i> Acknowledge All
+            </button>
+            <button class="btn-action secondary" onclick="loadAlerts()">
+                <i class="fas fa-rotate me-1"></i> Refresh
+            </button>
+        </div>
+    </div>
+
+    <!-- Alert Stats -->
+    <div class="alert-stats-row" id="alertStatsRow">
+        <div class="alert-stat-pill critical"><span id="critCount">0</span> Critical</div>
+        <div class="alert-stat-pill high"><span id="highCount">0</span> High</div>
+        <div class="alert-stat-pill medium"><span id="medCount">0</span> Medium</div>
+        <div class="alert-stat-pill low"><span id="lowCount">0</span> Low</div>
+        <div class="alert-stat-pill ack"><span id="ackCount">0</span> Acknowledged</div>
+    </div>
+
+    <!-- Filters -->
+    <div class="filter-bar">
+        <div class="filter-group">
+            <label>Severity</label>
+            <select id="filterSeverity" onchange="applyFilters()">
+                <option value="">All</option>
+                <option value="Critical">Critical</option>
+                <option value="High">High</option>
+                <option value="Medium">Medium</option>
+                <option value="Low">Low</option>
+            </select>
+        </div>
+        <div class="filter-group">
+            <label>Status</label>
+            <select id="filterStatus" onchange="applyFilters()">
+                <option value="">All</option>
+                <option value="0">Active</option>
+                <option value="1">Acknowledged</option>
+            </select>
+        </div>
+        <div class="filter-group">
+            <label>Search</label>
+            <input type="text" id="filterSearch" placeholder="Filter alerts..." oninput="applyFilters()">
+        </div>
+    </div>
+
+    <!-- Alerts Table -->
+    <div class="section-card">
+        <div class="table-responsive">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Severity</th>
+                        <th>Device</th>
+                        <th>Alert Type</th>
+                        <th>Message</th>
+                        <th>Status</th>
+                        <th>Timestamp</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody id="alertsTableBody">
+                    <tr><td colspan="8" class="text-center py-4"><i class="fas fa-spinner fa-spin me-2"></i>Loading alerts...</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+let allAlerts = [];
+
+async function loadAlerts() {
+    const res = await fetch('/api/alerts?limit=200');
+    allAlerts = await res.json();
+    renderAlerts(allAlerts);
+    updateStats(allAlerts);
+}
+
+function updateStats(alerts) {
+    document.getElementById('critCount').textContent = alerts.filter(a => a.severity === 'Critical').length;
+    document.getElementById('highCount').textContent = alerts.filter(a => a.severity === 'High').length;
+    document.getElementById('medCount').textContent = alerts.filter(a => a.severity === 'Medium').length;
+    document.getElementById('lowCount').textContent = alerts.filter(a => a.severity === 'Low').length;
+    document.getElementById('ackCount').textContent = alerts.filter(a => a.acknowledged).length;
+}
+
+function applyFilters() {
+    const sev = document.getElementById('filterSeverity').value;
+    const status = document.getElementById('filterStatus').value;
+    const search = document.getElementById('filterSearch').value.toLowerCase();
+    let filtered = allAlerts;
+    if (sev) filtered = filtered.filter(a => a.severity === sev);
+    if (status !== '') filtered = filtered.filter(a => String(a.acknowledged) === status);
+    if (search) filtered = filtered.filter(a =>
+        (a.message||'').toLowerCase().includes(search) ||
+        (a.device_name||'').toLowerCase().includes(search) ||
+        (a.alert_type||'').toLowerCase().includes(search)
+    );
+    renderAlerts(filtered);
+}
+
+function renderAlerts(alerts) {
+    const sevClass = { Critical: 'sev-critical', High: 'sev-high', Medium: 'sev-medium', Low: 'sev-low' };
+    const sevIcon  = { Critical: 'fa-skull-crossbones', High: 'fa-triangle-exclamation', Medium: 'fa-circle-exclamation', Low: 'fa-info-circle' };
+    const tbody = document.getElementById('alertsTableBody');
+    if (!alerts.length) {
+        tbody.innerHTML = '<tr><td colspan="8" class="text-center py-4 text-muted">No alerts found</td></tr>';
+        return;
+    }
+    tbody.innerHTML = alerts.map(a => `
+        <tr class="${a.acknowledged ? 'row-acked' : ''} row-${(a.severity||'low').toLowerCase()}">
+            <td class="text-muted">${a.id}</td>
+            <td><span class="sev-badge ${sevClass[a.severity]||'sev-low'}">
+                <i class="fas ${sevIcon[a.severity]||'fa-info'} me-1"></i>${a.severity}
+            </span></td>
+            <td><span class="device-chip">${a.device_name||'System'}</span></td>
+            <td>${a.alert_type}</td>
+            <td class="alert-msg">${a.message}</td>
+            <td>
+                ${a.acknowledged
+                    ? '<span class="status-chip acked"><i class="fas fa-check me-1"></i>Acked</span>'
+                    : '<span class="status-chip active"><i class="fas fa-circle-dot me-1"></i>Active</span>'}
+            </td>
+            <td class="mono-text">${a.created_at}</td>
+            <td>${!a.acknowledged ? `<button class="btn-sm-action" onclick="ackAlert(${a.id}, this)"><i class="fas fa-check"></i></button>` : '—'}</td>
+        </tr>
+    `).join('');
+}
+
+async function ackAlert(id, btn) {
+    await fetch(`/api/alerts/acknowledge/${id}`, { method: 'POST' });
+    btn.closest('tr').classList.add('row-acked');
+    btn.closest('td').innerHTML = '—';
+    loadAlerts();
+}
+
+async function acknowledgeAll() {
+    if (!confirm('Acknowledge all active alerts?')) return;
+    await fetch('/api/alerts/acknowledge-all', { method: 'POST' });
+    loadAlerts();
+}
+
+loadAlerts();
+setInterval(loadAlerts, 10000);
+</script>
+{% endblock %}

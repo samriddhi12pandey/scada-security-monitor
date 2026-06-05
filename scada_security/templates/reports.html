@@ -1,0 +1,85 @@
+{% extends "base.html" %}
+{% block title %}Reports{% endblock %}
+
+{% block content %}
+<div class="page-container">
+    <div class="page-header">
+        <div>
+            <h1 class="page-title"><i class="fas fa-file-pdf me-2"></i>Reports Center</h1>
+            <div class="page-sub">Generate and download operational and security reports</div>
+        </div>
+    </div>
+
+    <div class="reports-grid">
+
+        <div class="report-card">
+            <div class="report-icon" style="--c:#38a169;"><i class="fas fa-heartbeat"></i></div>
+            <div class="report-title">Device Health Report</div>
+            <div class="report-desc">Current operational status of all monitored industrial devices including temperature, voltage, and current readings.</div>
+            <div class="report-meta">
+                <span><i class="fas fa-clock me-1"></i>Daily</span>
+                <span><i class="fas fa-file-pdf me-1"></i>PDF</span>
+                <span><i class="fas fa-lock me-1"></i>Confidential</span>
+            </div>
+            <a href="/api/report/device-health" target="_blank" class="report-btn green">
+                <i class="fas fa-download me-2"></i>Generate & Download
+            </a>
+        </div>
+
+        <div class="report-card">
+            <div class="report-icon" style="--c:#e53e3e;"><i class="fas fa-shield-exclamation"></i></div>
+            <div class="report-title">Security Incident Report</div>
+            <div class="report-desc">All High and Critical severity security incidents, attack detections, and threat events logged by the IDS system.</div>
+            <div class="report-meta">
+                <span><i class="fas fa-clock me-1"></i>On-demand</span>
+                <span><i class="fas fa-file-pdf me-1"></i>PDF</span>
+                <span><i class="fas fa-lock me-1"></i>Restricted</span>
+            </div>
+            <a href="/api/report/security-incidents" target="_blank" class="report-btn red">
+                <i class="fas fa-download me-2"></i>Generate & Download
+            </a>
+        </div>
+
+        <div class="report-card">
+            <div class="report-icon" style="--c:#d69e2e;"><i class="fas fa-bell"></i></div>
+            <div class="report-title">Alert Summary Report</div>
+            <div class="report-desc">Complete listing of all generated alerts with severity, acknowledgment status, device origin, and timestamps.</div>
+            <div class="report-meta">
+                <span><i class="fas fa-clock me-1"></i>Weekly</span>
+                <span><i class="fas fa-file-pdf me-1"></i>PDF</span>
+                <span><i class="fas fa-lock me-1"></i>Internal</span>
+            </div>
+            <a href="/api/report/alert-summary" target="_blank" class="report-btn yellow">
+                <i class="fas fa-download me-2"></i>Generate & Download
+            </a>
+        </div>
+
+        <div class="report-card">
+            <div class="report-icon" style="--c:#3182ce;"><i class="fas fa-clipboard-list"></i></div>
+            <div class="report-title">System Activity Report</div>
+            <div class="report-desc">Full audit trail of all user actions, logins, logouts, configuration changes, and administrative activities.</div>
+            <div class="report-meta">
+                <span><i class="fas fa-clock me-1"></i>Monthly</span>
+                <span><i class="fas fa-file-pdf me-1"></i>PDF</span>
+                <span><i class="fas fa-lock me-1"></i>Confidential</span>
+            </div>
+            <a href="/api/report/system-activity" target="_blank" class="report-btn blue">
+                <i class="fas fa-download me-2"></i>Generate & Download
+            </a>
+        </div>
+
+    </div>
+
+    <div class="section-card mt-4">
+        <div class="section-header">
+            <div class="section-title"><i class="fas fa-info-circle me-2"></i>Report Information</div>
+        </div>
+        <div class="info-grid">
+            <div class="info-item"><i class="fas fa-shield-halved text-success me-2"></i>All reports are generated in real-time from live database records.</div>
+            <div class="info-item"><i class="fas fa-file-pdf text-danger me-2"></i>Reports are generated as PDF files with classification markings.</div>
+            <div class="info-item"><i class="fas fa-scroll text-warning me-2"></i>Each download is logged in the system audit trail.</div>
+            <div class="info-item"><i class="fas fa-clock text-info me-2"></i>Reports reflect data at the exact moment of generation.</div>
+        </div>
+    </div>
+</div>
+{% endblock %}

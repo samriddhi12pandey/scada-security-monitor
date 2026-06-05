@@ -1,0 +1,146 @@
+{% extends "base.html" %}
+{% block title %}User Management{% endblock %}
+
+{% block content %}
+<div class="page-container">
+    <div class="page-header">
+        <div>
+            <h1 class="page-title"><i class="fas fa-users-gear me-2"></i>User Management</h1>
+            <div class="page-sub">Manage operator accounts and access control</div>
+        </div>
+        <div class="header-actions">
+            <button class="btn-action" onclick="document.getElementById('addUserModal').style.display='flex'">
+                <i class="fas fa-user-plus me-1"></i> Add User
+            </button>
+        </div>
+    </div>
+
+    <div class="section-card">
+        <div class="table-responsive">
+            <table class="data-table">
+                <thead>
+                    <tr><th>#</th><th>Username</th><th>Role</th><th>Created At</th><th>Actions</th></tr>
+                </thead>
+                <tbody>
+                    {% for user in users %}
+                    <tr>
+                        <td class="text-muted">{{ user.id }}</td>
+                        <td>
+                            <span class="user-chip">
+                                <i class="fas fa-{% if user.role == 'admin' %}user-shield{% else %}user{% endif %} me-1"></i>
+                                {{ user.username }}
+                            </span>
+                        </td>
+                        <td>
+                            <span class="role-chip {% if user.role == 'admin' %}role-admin{% else %}role-operator{% endif %}">
+                                {{ user.role | upper }}
+                            </span>
+                        </td>
+                        <td class="mono-text">{{ user.created_at }}</td>
+                        <td>
+                            {% if user.username != 'admin' %}
+                            <button class="btn-sm-action danger" onclick="deleteUser({{ user.id }}, '{{ user.username }}')">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                            {% else %}
+                            <span class="text-muted">Protected</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- RBAC Info -->
+    <div class="section-card mt-4">
+        <div class="section-header">
+            <div class="section-title"><i class="fas fa-lock me-2"></i>Role-Based Access Control</div>
+        </div>
+        <div class="rbac-grid">
+            <div class="rbac-card admin">
+                <div class="rbac-role"><i class="fas fa-user-shield me-2"></i>ADMIN</div>
+                <ul class="rbac-perms">
+                    <li><i class="fas fa-check text-success me-1"></i>Full dashboard access</li>
+                    <li><i class="fas fa-check text-success me-1"></i>Alert management</li>
+                    <li><i class="fas fa-check text-success me-1"></i>Attack simulations</li>
+                    <li><i class="fas fa-check text-success me-1"></i>Audit log access</li>
+                    <li><i class="fas fa-check text-success me-1"></i>Report generation</li>
+                    <li><i class="fas fa-check text-success me-1"></i>User management</li>
+                </ul>
+            </div>
+            <div class="rbac-card operator">
+                <div class="rbac-role"><i class="fas fa-user me-2"></i>OPERATOR</div>
+                <ul class="rbac-perms">
+                    <li><i class="fas fa-check text-success me-1"></i>Full dashboard access</li>
+                    <li><i class="fas fa-check text-success me-1"></i>Alert management</li>
+                    <li><i class="fas fa-check text-success me-1"></i>Attack simulations</li>
+                    <li><i class="fas fa-check text-success me-1"></i>Audit log access</li>
+                    <li><i class="fas fa-check text-success me-1"></i>Report generation</li>
+                    <li><i class="fas fa-times text-danger me-1"></i>User management</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Add User Modal -->
+<div id="addUserModal" class="modal-overlay" style="display:none;" onclick="if(event.target===this)this.style.display='none'">
+    <div class="modal-box">
+        <div class="modal-header">
+            <div class="modal-title"><i class="fas fa-user-plus me-2"></i>Add New User</div>
+            <button onclick="document.getElementById('addUserModal').style.display='none'" class="modal-close">×</button>
+        </div>
+        <div class="modal-body">
+            <div id="addUserError" class="alert alert-danger" style="display:none;"></div>
+            <div class="form-group-custom">
+                <label class="form-label-custom">Username</label>
+                <input type="text" id="newUsername" class="form-control-custom" placeholder="Enter username">
+            </div>
+            <div class="form-group-custom">
+                <label class="form-label-custom">Password</label>
+                <input type="password" id="newPassword" class="form-control-custom" placeholder="Enter password">
+            </div>
+            <div class="form-group-custom">
+                <label class="form-label-custom">Role</label>
+                <select id="newRole" class="form-control-custom">
+                    <option value="operator">Operator</option>
+                    <option value="admin">Admin</option>
+                </select>
+            </div>
+            <button class="btn-login mt-2" onclick="addUser()">
+                <i class="fas fa-plus me-2"></i>Create User
+            </button>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+async function addUser() {
+    const username = document.getElementById('newUsername').value.trim();
+    const password = document.getElementById('newPassword').value.trim();
+    const role = document.getElementById('newRole').value;
+    const errEl = document.getElementById('addUserError');
+    if (!username || !password) { errEl.textContent = 'Username and password required'; errEl.style.display='block'; return; }
+    const res = await fetch('/api/users/add', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({username, password, role})
+    });
+    const data = await res.json();
+    if (data.success) { location.reload(); }
+    else { errEl.textContent = data.error || 'Failed to create user'; errEl.style.display='block'; }
+}
+
+async function deleteUser(id, username) {
+    if (!confirm(`Delete user "${username}"?`)) return;
+    const res = await fetch(`/api/users/delete/${id}`, { method: 'POST' });
+    const data = await res.json();
+    if (data.success) location.reload();
+    else alert(data.error || 'Failed to delete user');
+}
+</script>
+{% endblock %}

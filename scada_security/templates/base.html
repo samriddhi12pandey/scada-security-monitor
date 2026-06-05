@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}SCADA Security Monitor{% endblock %} – PowerPlant SOC</title>
+    <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Exo+2:wght@300;400;600;700;900&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="/static/css/style.css" rel="stylesheet">
+    {% block extra_head %}{% endblock %}
+</head>
+<body>
+
+<!-- Top Nav -->
+<nav class="navbar navbar-dark top-nav">
+    <div class="container-fluid px-3">
+        <div class="d-flex align-items-center gap-3">
+            <div class="brand-logo">
+                <i class="fas fa-shield-halved"></i>
+            </div>
+            <div>
+                <div class="brand-title">SCADA SECURITY MONITOR</div>
+                <div class="brand-sub">Thermal Power Plant – Cybersecurity Operations Center</div>
+            </div>
+        </div>
+        <div class="d-flex align-items-center gap-3">
+            <div class="system-time" id="systemTime">--:--:--</div>
+            <div class="threat-badge" id="navThreatBadge">
+                <i class="fas fa-circle-dot pulse-dot"></i>
+                <span id="navThreatLevel">LOADING...</span>
+            </div>
+            <div class="user-info">
+                <i class="fas fa-user-shield"></i>
+                <span>{{ username | upper }}</span>
+                <span class="role-badge">{{ role | upper }}</span>
+            </div>
+            <a href="/logout" class="btn btn-sm btn-outline-danger">
+                <i class="fas fa-right-from-bracket"></i>
+            </a>
+        </div>
+    </div>
+</nav>
+
+<!-- Sidebar + Content -->
+<div class="app-layout">
+    <aside class="sidebar">
+        <nav class="sidebar-nav">
+            <a href="/dashboard" class="nav-item {% if request.endpoint == 'dashboard' %}active{% endif %}">
+                <i class="fas fa-gauge-high"></i>
+                <span>Dashboard</span>
+            </a>
+            <a href="/alerts" class="nav-item {% if request.endpoint == 'alerts_page' %}active{% endif %}">
+                <i class="fas fa-triangle-exclamation"></i>
+                <span>Alerts</span>
+                <span class="badge-count" id="sidebarAlertCount">0</span>
+            </a>
+            <a href="/audit" class="nav-item {% if request.endpoint == 'audit_page' %}active{% endif %}">
+                <i class="fas fa-scroll"></i>
+                <span>Audit Logs</span>
+            </a>
+            <a href="/reports" class="nav-item {% if request.endpoint == 'reports_page' %}active{% endif %}">
+                <i class="fas fa-file-pdf"></i>
+                <span>Reports</span>
+            </a>
+            {% if role == 'admin' %}
+            <a href="/users" class="nav-item {% if request.endpoint == 'users_page' %}active{% endif %}">
+                <i class="fas fa-users-gear"></i>
+                <span>Users</span>
+            </a>
+            {% endif %}
+            <div class="nav-divider"></div>
+            <div class="nav-section-label">SYSTEM STATUS</div>
+            <div class="sidebar-status">
+                <div class="status-item">
+                    <span class="status-dot online"></span>
+                    <span>Simulator Active</span>
+                </div>
+                <div class="status-item">
+                    <span class="status-dot online"></span>
+                    <span>IDS Active</span>
+                </div>
+                <div class="status-item">
+                    <span class="status-dot online"></span>
+                    <span>Audit Logger</span>
+                </div>
+            </div>
+        </nav>
+    </aside>
+
+    <main class="main-content">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+          {% for category, message in messages %}
+            <div class="alert alert-{{ category }} alert-dismissible fade show mx-3 mt-3" role="alert">
+                <i class="fas fa-info-circle me-2"></i>{{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+          {% endfor %}
+        {% endwith %}
+
+        {% block content %}{% endblock %}
+    </main>
+</div>
+
+<!-- Scanline overlay -->
+<div class="scanlines"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script src="/static/js/base.js"></script>
+{% block extra_js %}{% endblock %}
+</body>
+</html>

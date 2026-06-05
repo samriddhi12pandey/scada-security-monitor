@@ -1,0 +1,137 @@
+{% extends "base.html" %}
+{% block title %}Audit Logs{% endblock %}
+
+{% block content %}
+<div class="page-container">
+    <div class="page-header">
+        <div>
+            <h1 class="page-title"><i class="fas fa-scroll me-2"></i>Audit & Security Logs</h1>
+            <div class="page-sub">Complete record of all system actions and security events</div>
+        </div>
+        <div class="header-actions">
+            <button class="btn-action secondary" onclick="loadAll()">
+                <i class="fas fa-rotate me-1"></i> Refresh
+            </button>
+        </div>
+    </div>
+
+    <!-- Tabs -->
+    <div class="tab-bar">
+        <button class="tab-btn active" onclick="switchTab('audit', this)">
+            <i class="fas fa-clipboard-list me-1"></i> Audit Log
+        </button>
+        <button class="tab-btn" onclick="switchTab('security', this)">
+            <i class="fas fa-user-lock me-1"></i> Security Events
+        </button>
+    </div>
+
+    <!-- Audit Log Tab -->
+    <div id="tab-audit" class="tab-content">
+        <div class="section-card">
+            <div class="section-header">
+                <div class="section-title"><i class="fas fa-clipboard-list me-2"></i>System Audit Log</div>
+                <div class="section-sub">All user actions and system events</div>
+            </div>
+            <div class="table-responsive">
+                <table class="data-table">
+                    <thead>
+                        <tr><th>#</th><th>User</th><th>Action</th><th>Details</th><th>IP Address</th><th>Timestamp</th></tr>
+                    </thead>
+                    <tbody id="auditTableBody">
+                        <tr><td colspan="6" class="text-center py-4"><i class="fas fa-spinner fa-spin"></i> Loading...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Security Events Tab -->
+    <div id="tab-security" class="tab-content" style="display:none;">
+        <div class="section-card">
+            <div class="section-header">
+                <div class="section-title"><i class="fas fa-user-lock me-2"></i>Security Events</div>
+                <div class="section-sub">Login attempts, failures, and threat detections</div>
+            </div>
+            <div class="table-responsive">
+                <table class="data-table">
+                    <thead>
+                        <tr><th>#</th><th>Event Type</th><th>Username</th><th>IP Address</th><th>Details</th><th>Timestamp</th></tr>
+                    </thead>
+                    <tbody id="securityTableBody">
+                        <tr><td colspan="6" class="text-center py-4"><i class="fas fa-spinner fa-spin"></i> Loading...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function switchTab(name, btn) {
+    document.querySelectorAll('.tab-content').forEach(t => t.style.display = 'none');
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.getElementById('tab-' + name).style.display = 'block';
+    btn.classList.add('active');
+}
+
+const actionIcon = {
+    'User Login': 'fa-right-to-bracket text-success',
+    'User Logout': 'fa-right-from-bracket text-muted',
+    'Failed Login': 'fa-ban text-danger',
+    'Alert Generated': 'fa-bell text-warning',
+    'Attack Simulation': 'fa-radiation text-danger',
+    'Report Download': 'fa-file-pdf text-info',
+    'Alert Acknowledged': 'fa-check text-success',
+    'User Created': 'fa-user-plus text-success',
+    'User Deleted': 'fa-user-minus text-danger',
+};
+
+const secIcon = {
+    'Successful Login': 'fa-circle-check text-success',
+    'Failed Login': 'fa-circle-xmark text-danger',
+    'Rate Limit Exceeded': 'fa-gauge-high text-warning',
+    'Network Scan Detected': 'fa-radar text-danger',
+};
+
+async function loadAudit() {
+    const res = await fetch('/api/audit-logs');
+    const data = await res.json();
+    const tbody = document.getElementById('auditTableBody');
+    tbody.innerHTML = data.map(r => {
+        const icon = actionIcon[r.action] || 'fa-circle-dot text-muted';
+        return `<tr>
+            <td class="text-muted">${r.id}</td>
+            <td><span class="user-chip">${r.user || 'SYSTEM'}</span></td>
+            <td><i class="fas ${icon} me-2"></i>${r.action}</td>
+            <td class="text-muted">${r.details || '—'}</td>
+            <td class="mono-text">${r.ip_address || '—'}</td>
+            <td class="mono-text">${r.created_at}</td>
+        </tr>`;
+    }).join('') || '<tr><td colspan="6" class="text-center py-4 text-muted">No records</td></tr>';
+}
+
+async function loadSecurity() {
+    const res = await fetch('/api/security-logs');
+    const data = await res.json();
+    const tbody = document.getElementById('securityTableBody');
+    tbody.innerHTML = data.map(r => {
+        const icon = secIcon[r.event_type] || 'fa-shield text-muted';
+        const isFailed = r.event_type === 'Failed Login';
+        return `<tr class="${isFailed ? 'row-critical' : ''}">
+            <td class="text-muted">${r.id}</td>
+            <td><i class="fas ${icon} me-2"></i>${r.event_type}</td>
+            <td>${r.username || '—'}</td>
+            <td class="mono-text">${r.ip_address || '—'}</td>
+            <td class="text-muted">${r.details || '—'}</td>
+            <td class="mono-text">${r.created_at}</td>
+        </tr>`;
+    }).join('') || '<tr><td colspan="6" class="text-center py-4 text-muted">No records</td></tr>';
+}
+
+function loadAll() { loadAudit(); loadSecurity(); }
+loadAll();
+setInterval(loadAll, 15000);
+</script>
+{% endblock %}
